@@ -9,11 +9,21 @@ const isAuth = require("./middleware/isAuth");
 
 app.use(bodyParser.json());
 
+app.use(isAuth);
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.get("/", (req, res, next) => {
   res.send("Hello World!");
 });
-
-app.use(isAuth);
 
 app.use(
   "/graphql",
@@ -30,8 +40,8 @@ mongoose
   )
   .then((res) => {
     console.log("MongoDB connected successfully!");
-    app.listen(3000, () => {
-      console.log("Listening on port 3000");
+    app.listen(8000, () => {
+      console.log("Listening on port 8000");
     });
   })
   .catch((err) => {
