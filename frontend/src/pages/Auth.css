@@ -9,3 +9,8 @@
     max-width: 80%;
     margin: 3rem auto;
 }
+
+.auth-form input {
+  padding: 0.5rem;
+  border-radius: 0.2rem;
+}

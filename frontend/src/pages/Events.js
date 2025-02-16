@@ -19,11 +19,13 @@ class EventsPage extends Component {
     this.priceRef = React.createRef();
     this.descriptionRef = React.createRef();
     this.dateRef = React.createRef();
+    this.isActive = true;
   }
 
   static contextType = AuthContext;
 
   componentDidMount() {
+    this.isActive = true;
     this.fetchEvents();
   }
 
@@ -48,12 +50,11 @@ class EventsPage extends Component {
     }
 
     const event = { title, price, date, description };
-    console.log(event);
 
     const createEventRequestBody = {
       query: `
-        mutation { 
-          createEvent (eventInput: { title: "${title}", description: "${description}", date: "${date}", price: ${price}}) {
+        mutation CreateEvent($title: String!, $description: String!, $date: String!, $price: Float!) { 
+          createEvent (eventInput: { title: $title, description: $description, date: $date, price: $price}) {
             _id
             title
             description
@@ -62,6 +63,12 @@ class EventsPage extends Component {
           }
         }
       `,
+      variables: {
+        title: event.title,
+        description: event.description,
+        date: event.date,
+        price: event.price,
+      },
     };
 
     const token = this.context.token;
@@ -142,11 +149,15 @@ class EventsPage extends Component {
       })
       .then((resData) => {
         const events = resData.data.events;
-        this.setState({ events: events, isLoading: false });
+        if (this.isActive) {
+          this.setState({ events: events, isLoading: false });
+        }
       })
       .catch((err) => {
         console.error(err);
-        this.setState({ isLoading: false });
+        if (this.isActive) {
+          this.setState({ isLoading: false });
+        }
       });
   };
 
@@ -157,7 +168,54 @@ class EventsPage extends Component {
     });
   };
 
-  bookEventHandler = () => {};
+  bookEventHandler = () => {
+    if (!this.context.token) {
+      this.setState({ selectedEvent: null });
+      return;
+    }
+    this.setState({ isLoading: true });
+    const requestBody = {
+      query: `
+        mutation BookEvent($eventId: ID!) { 
+          bookEvent(eventId: $eventId) {
+            _id
+            createdAt
+            updatedAt
+          }
+        }
+      `,
+      variables: {
+        eventId: this.state.selectedEvent._id,
+      },
+    };
+
+    // send a request to the backend
+    fetch("http://localhost:8000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + this.context.token,
+      },
+    })
+      .then((res) => {
+        if (res.status !== 200 && res.status !== 201) {
+          throw new Error("Failed!");
+        }
+        return res.json();
+      })
+      .then((resData) => {
+        this.setState({ selectedEvent: null, isLoading: false });
+      })
+      .catch((err) => {
+        console.error(err);
+        this.setState({ isLoading: false });
+      });
+  };
+
+  componentWillUnmount() {
+    this.isActive = false;
+  }
 
   render() {
     return (
@@ -211,7 +269,7 @@ class EventsPage extends Component {
             canConfirm
             onCancel={this.modelCancelHandler}
             onConfirm={this.bookEventHandler}
-            confirmText="Book"
+            confirmText={this.context.token ? "Book" : "Confirm"}
           >
             <h1>{this.state.selectedEvent.title}</h1>
             <h2>

@@ -30,26 +30,34 @@ class AuthPage extends Component {
 
     let requestBody = {
       query: `
-        query {
-          login(email: "${email}", password: "${password}") {
+        query Login($email: String!, $password: String!) {
+          login(email: $email, password: $password) {
             userId
             token
             tokenExpirationInHours
           }
         }
       `,
+      variables: {
+        email: email,
+        password: password,
+      },
     };
 
     if (!this.state.isLogin) {
       requestBody = {
         query: `
-        mutation { 
-          createUser (userInput: { email: "${email}", password: "${password}"}) {
+        mutation CreateUser($email: String!, $password: String!) { 
+          createUser (userInput: { email: $email, password: $password}) {
             _id
             email
           }
         }
       `,
+        variables: {
+          email: email,
+          password: password,
+        },
       };
     }
     // send a request to the backend
@@ -103,7 +111,7 @@ class AuthPage extends Component {
           <div className="form-actions">
             <button type="submit">Submit</button>
             <button type="button" onClick={this.switchModeHandler}>
-              {this.state.isLogin ? "SignUp" : "Login"}
+              {this.state.isLogin ? "Switch to SignUp" : "Switch to Login"}
             </button>
           </div>
         </form>
